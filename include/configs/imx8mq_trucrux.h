@@ -212,7 +212,7 @@
 #define CONFIG_SYS_SDRAM_BASE           0x40000000
 #define PHYS_SDRAM                      0x40000000
 #define DEFAULT_SDRAM_SIZE		(512 * SZ_1M) /* 512MB Minimum DDR4, see get_dram_size */
-#define VAR_EEPROM_DRAM_START          (CONFIG_SYS_MEMTEST_START + \
+#define TRUX_EEPROM_DRAM_START          (CONFIG_SYS_MEMTEST_START + \
 					(DEFAULT_SDRAM_SIZE >> 1))
 
 #define CONFIG_MXC_UART_BASE		UART1_BASE_ADDR
