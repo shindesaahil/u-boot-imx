@@ -54,6 +54,12 @@ config IMX8M_MCU_RDC_STOP_CONFIG_ADDR
 	hex "Start address of mcu rdc config when mcu stops"
 	default 0x187000
 
+config IMX8M_BOARD_INIT_DRAM
+       bool
+       default n
+       help
+        This option enables DRAM configuration in board code
+
 choice
 	prompt "NXP i.MX8M board select"
 	optional
@@ -341,6 +347,32 @@ config TARGET_IMX8MP_RSB3720A1_6G
 	select IMX8MP
 	select SUPPORT_SPL
 	select IMX8M_LPDDR4
+
+config TARGET_IMX8MQ_TRUCRUX
+       bool "imx8mq_trux_q01"
+       select IMX8MQ
+       select SUPPORT_SPL
+       select IMX8M_LPDDR4
+       select IMX8M_BOARD_INIT_DRAM
+       select FSL_CAAM
+       select FSL_BLOB
+       select ARCH_MISC_INIT
+       select IMX_REDUCE_DMEM_PADDING
+       select SPL_CRYPTO_SUPPORT if SPL
+
+config TARGET_IMX8MM_TRUCRUX
+       bool "imx8mm_trux_q01"
+       select IMX8MM
+       select SUPPORT_SPL
+       select IMX8M_DDR4
+       select IMX8M_LPDDR4
+       select IMX8M_BOARD_INIT_DRAM
+       select FSL_CAAM
+       select FSL_BLOB
+       select MISC
+       select SPL_CRYPTO_SUPPORT if SPL
+       select IMX_REDUCE_DMEM_PADDING
+
 endchoice
 
 source "board/advantech/imx8mp_rsb3720a1/Kconfig"
@@ -366,5 +398,7 @@ source "board/technexion/pico-imx8mq/Kconfig"
 source "board/variscite/imx8mn_var_som/Kconfig"
 source "board/toradex/verdin-imx8mm/Kconfig"
 source "board/toradex/verdin-imx8mp/Kconfig"
+source "board/trucrux/imx8mq_trucrux/Kconfig"
+source "board/trucrux/imx8mm_trucrux/Kconfig"
 
 endif
