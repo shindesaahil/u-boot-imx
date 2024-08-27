@@ -58,7 +58,11 @@ static ulong bootloader_mmc_offset(void)
 	else if (is_imx8qm() || (is_imx8qxp() && !is_soc_rev(CHIP_REV_B))) {
 		if (MEK_8QM_EMMC == fastboot_devinfo.dev_id)
 		/* target device is eMMC boot0 partition, bootloader offset is 0x0 */
+		#ifdef CONFIG_USE_EMMC_BOOT_PART
+			return 0x8000;
+		#else
 			return 0x0;
+		#endif
 		else
 		/* target device is SD card, bootloader offset is 0x8000 */
 			return 0x8000;
@@ -184,7 +188,11 @@ static int _fastboot_parts_load_from_ptable(void)
 
 		/* multiple boot paritions for eMMC 4.3 later */
 		if (mmc->part_config != MMCPART_NOAVAILABLE) {
-			boot_partition = FASTBOOT_MMC_BOOT_PARTITION_ID;
+			#ifdef CONFIG_USE_EMMC_BOOT_PART
+				boot_partition = FASTBOOT_MMC_USER_PARTITION_ID;
+			#else
+				boot_partition = FASTBOOT_MMC_BOOT_PARTITION_ID;
+			#endif
 			user_partition = FASTBOOT_MMC_USER_PARTITION_ID;
 			boot_loader_psize = mmc->capacity_boot;
 		}
