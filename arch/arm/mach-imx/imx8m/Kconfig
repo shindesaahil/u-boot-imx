@@ -55,10 +55,10 @@ config IMX8M_MCU_RDC_STOP_CONFIG_ADDR
 	default 0x187000
 
 config IMX8M_BOARD_INIT_DRAM
-       bool
-       default n
-       help
-        This option enables DRAM configuration in board code
+	bool
+	default n
+	help
+	 This option enables DRAM configuration in board code
 
 choice
 	prompt "NXP i.MX8M board select"
