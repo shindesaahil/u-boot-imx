@@ -33,6 +33,7 @@
 	phy-supply = <&reg_eth_phy>;
 	phy-reset-gpios = <&gpio1 9 GPIO_ACTIVE_LOW>;
 	phy-reset-duration = <10>;
+	phy-reset-post-delay = <20>;
 	fsl,magic-packet;
 	status = "okay";
 
@@ -156,6 +157,8 @@
 
 /* eMMC */
 &usdhc1 {
+	assigned-clocks = <&clk IMX8MQ_CLK_USDHC1>;
+	assigned-clock-rates = <400000000>;
 	pinctrl-names = "default", "state_100mhz", "state_200mhz";
 	pinctrl-0 = <&pinctrl_usdhc1>;
 	pinctrl-1 = <&pinctrl_usdhc1_100mhz>;
