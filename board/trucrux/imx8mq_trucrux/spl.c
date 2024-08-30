@@ -27,7 +27,7 @@
 #include <mmc.h>
 #include <fsl_sec.h>
 #include <linux/delay.h>
-
+#include <power/bd71837.h>
 #include "../common/imx8_eeprom.h"
 
 DECLARE_GLOBAL_DATA_PTR;
@@ -80,6 +80,27 @@ static struct i2c_pads_info i2c_pad_info3 = {
 
 #define USDHC1_PWR_GPIO IMX_GPIO_NR(2, 10)
 #define USDHC2_PWR_GPIO IMX_GPIO_NR(2, 19)
+
+static const char bd71837_name[] = "BD71837";
+int power_bd71837_init (unsigned char bus) {
+        struct pmic *p = pmic_alloc();
+
+        if (!p) {
+                printf("%s: POWER allocation error!\n", __func__);
+                return -ENOMEM;
+        }
+
+        p->name = bd71837_name;
+        p->interface = PMIC_I2C;
+        p->number_of_regs = BD718XX_MAX_REGISTER;
+        p->hw.i2c.addr = 0x4b;
+        p->hw.i2c.tx_num = 1;
+        p->bus = bus;
+
+        printf("power_bd71837_init\n");
+
+        return 0;
+}
 
 int board_mmc_getcd(struct mmc *mmc)
 {
@@ -227,42 +248,39 @@ int set_vdd_regulator(int bus, char *name)
 int power_init_board(void)
 {
 	struct pmic *p;
-	int ret;
-	unsigned int reg;
+		int ret;
+		ret = power_bd71837_init(PMIC_I2C_BUS);
+		if (ret)
+			printf("power init failed\n");
+		else
+			printf("PMIC: BD71837 Found\n");
 
-	ret = power_pfuze100_init(PMIC_I2C_BUS);
-	if (ret)
-		return -ENODEV;
+		p = pmic_get("BD71837");
+		pmic_probe(p);
 
-	p = pmic_get("PFUZE100");
-	ret = pmic_probe(p);
-	if (ret)
-		return -ENODEV;
+		/* decrease RESET key long push time from the default 10s to 10ms */
+		pmic_reg_write(p, BD718XX_PWRONCONFIG1, 0x0);
 
-	pmic_reg_read(p, PFUZE100_DEVICEID, &reg);
-	printf("PMIC:  PFUZE100 ID=0x%02x\n", reg);
+		/* unlock the PMIC regs */
+		pmic_reg_write(p, BD718XX_REGLOCK, 0x1);
 
-	pmic_reg_read(p, PFUZE100_SW3AVOL, &reg);
-	if ((reg & 0x3f) != 0x18) {
-		reg &= ~0x3f;
-		reg |= 0x18;
-		pmic_reg_write(p, PFUZE100_SW3AVOL, reg);
-	}
+		/* increase VDD_SOC to typical value 0.85v before first DRAM access */
+		pmic_reg_write(p, BD718XX_BUCK1_VOLT_RUN, 0x0f);
 
-	ret = pfuze_mode_init(p, APS_PFM);
-	if (ret < 0)
-		return ret;
+		/* increase VDD_DRAM to 0.975v for 3Ghz DDR */
+		pmic_reg_write(p, BD718XX_1ST_NODVS_BUCK_VOLT, 0x83);
 
-	/* set SW3A standby mode to off */
-	pmic_reg_read(p, PFUZE100_SW3AMODE, &reg);
-	reg &= ~0xf;
-	reg |= APS_OFF;
-	pmic_reg_write(p, PFUZE100_SW3AMODE, reg);
+		/* Enabled NVCC_DRAM */
+		pmic_reg_write(p, BD718XX_4TH_NODVS_BUCK_CTRL, 0x03);
 
-	set_vdd_regulator(VDD_ARM_I2C_BUS, "VDD_ARM");
-	set_vdd_regulator(VDD_SOC_I2C_BUS, "VDD_SOC");
+		/* Enable LDO5 - PHY supply to 1.8V */
+		pmic_reg_write(p, BD718XX_LDO5_VOLT, 0xc0);
 
-	return 0;
+		/* lock the PMIC regs */
+		pmic_reg_write(p, BD718XX_REGLOCK, 0x11);
+
+		return 0;
+
 }
 #endif
 
