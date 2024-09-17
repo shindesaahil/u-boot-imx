@@ -35,17 +35,6 @@ DECLARE_GLOBAL_DATA_PTR;
 #define UART_PAD_CTRL	(PAD_CTL_DSE6 | PAD_CTL_FSEL1)
 #define WDOG_PAD_CTRL	(PAD_CTL_DSE6 | PAD_CTL_HYS | PAD_CTL_PUE)
 
-#define WL_PWR_GPIO_PADS IMX_GPIO_NR(1, 8)
-#define BT_REG_GPIO_PADS IMX_GPIO_NR(3, 4)
-
-static iomux_v3_cfg_t const wl_pwr_on_pads[] = {
-        IMX8MQ_PAD_GPIO1_IO08__GPIO1_IO8 | MUX_PAD_CTRL(NO_PAD_CTRL),
-};
-
-static iomux_v3_cfg_t const bt_reg_on_pads[] = {
-        IMX8MQ_PAD_NAND_CE3_B__GPIO3_IO4 | MUX_PAD_CTRL(NO_PAD_CTRL),
-};
-
 static iomux_v3_cfg_t const wdog_pads[] = {
 	IMX8MQ_PAD_GPIO1_IO02__WDOG1_WDOG_B | MUX_PAD_CTRL(WDOG_PAD_CTRL),
 };
@@ -59,7 +48,7 @@ static iomux_v3_cfg_t const uart_pads[] = {
 struct efi_fw_image fw_images[] = {
 	{
 		.image_type_id = IMX_BOOT_IMAGE_GUID,
-		.fw_name = u"IMX8MQ-TRUX-RAW",
+		.fw_name = u"IMX8MQ-VAR-DART-RAW",
 		.image_index = 1,
 	},
 };
@@ -90,21 +79,6 @@ ulong board_get_usable_ram_top(ulong total_size)
 	unsigned long top = CONFIG_SYS_SDRAM_BASE + (unsigned long) SZ_1G;
 
 	return (gd->ram_top > top) ? top : gd->ram_top;
-}
-
-void setup_wifi(void)
-{
-        imx_iomux_v3_setup_multiple_pads(wl_pwr_on_pads, ARRAY_SIZE(wl_pwr_on_pads));
-	imx_iomux_v3_setup_multiple_pads(bt_reg_on_pads, ARRAY_SIZE(bt_reg_on_pads));
-
-        gpio_request(WL_PWR_GPIO_PADS, "wl_reg_on");
-        gpio_direction_output(WL_PWR_GPIO_PADS, 0);
-        gpio_set_value(WL_PWR_GPIO_PADS, 1);
-
-	gpio_request(BT_REG_GPIO_PADS, "bt_reg_on");
-        gpio_direction_output(BT_REG_GPIO_PADS, 0);
-        gpio_set_value(BT_REG_GPIO_PADS, 1);
-
 }
 
 #ifdef CONFIG_FEC_MXC
@@ -212,7 +186,6 @@ int board_init(void)
 	init_usb_clk();
 #endif
 
-	setup_wifi();
 	return 0;
 }
 
