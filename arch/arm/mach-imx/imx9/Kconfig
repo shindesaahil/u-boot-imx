@@ -37,10 +37,14 @@ config TARGET_IMX93_9X9_QSB
 	select IMX93
 	select IMX9_LPDDR4X
 
+config TARGET_IMX93_TRUCRUX
+        bool "imx93_trucrux"
+        select IMX93
+        select IMX9_LPDDR4X
 endchoice
 
 source "board/freescale/imx93_evk/Kconfig"
 source "board/freescale/imx93_qsb/Kconfig"
-
+source "board/trucrux/imx93_trucrux/Kconfig"
 endif
 
