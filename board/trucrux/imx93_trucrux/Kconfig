@@ -1,0 +1,16 @@
+if TARGET_IMX93_TRUCRUX
+
+config SYS_BOARD
+        default "imx93_trucrux"
+
+config SYS_VENDOR
+        default "trucrux"
+
+config SYS_CONFIG_NAME
+        default "imx93_trucrux"
+
+source "board/freescale/common/Kconfig"
+source "board/trucrux/common/Kconfig"
+
+endif
+~      
