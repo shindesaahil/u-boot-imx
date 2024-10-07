@@ -30,7 +30,7 @@ enum som_storage {
 /* Number of DRAM adjustment tables */
 #define DRAM_TABLE_NUM 7
 
-struct __attribute__((packed)) var_eeprom
+struct __attribute__((packed)) trux_eeprom
 {
 	u16 magic;			/* 00-0x00 - magic number       */
 	u8 partnum[8];			/* 02-0x02 - part number        */
@@ -52,7 +52,7 @@ struct __attribute__((packed)) var_eeprom
 #define TRUX_CARRIER_EEPROM_MAGIC	0x5643 /* == HEX("VC") */
 
 #define CARRIER_REV_LEN 16
-struct __attribute__((packed)) var_carrier_eeprom
+struct __attribute__((packed)) trux_carrier_eeprom
 {
 	u16 magic;                          /* 00-0x00 - magic number		*/
 	u8 struct_ver;                      /* 01-0x01 - EEPROM structure version	*/
