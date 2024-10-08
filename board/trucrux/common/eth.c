@@ -105,7 +105,7 @@ int trux_setup_mac(struct trux_eeprom *eeprom)
 		return -1;
 
 	/* Set eth0 MAC address */
-	_eth_env_set_enetaddr(0, enetaddr);
+	trux_eth_env_set_enetaddr(0, enetaddr);
 
 #if defined(CONFIG_ARCH_IMX8) || defined(CONFIG_IMX8MP) || defined(CONFIG_IMX93)
 	/* Set eth1 MAC address to eth0 + 1 */
