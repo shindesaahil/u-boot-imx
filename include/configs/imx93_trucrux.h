@@ -178,7 +178,7 @@
 
 #define CONFIG_SYS_SDRAM_BASE           0x80000000
 #define PHYS_SDRAM                      0x80000000
-#define DEFAULT_SDRAM_SIZE		0x100000000 /*(512 * SZ_1M)  512MB Minimum DDR4, see
+#define DEFAULT_SDRAM_SIZE             0x100000000 /*(512 * SZ_1M)  512MB Minimum DDR4, see get_dram_size */
 #define PHYS_SDRAM_SIZE		DEFAULT_SDRAM_SIZE
 #define TRUX_EEPROM_DRAM_START           (PHYS_SDRAM + (DEFAULT_SDRAM_SIZE >> 1))
 #define TRUX_SOM_EEPROM_I2C_NAME "i2c@42530000"
