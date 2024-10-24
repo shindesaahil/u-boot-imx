@@ -1,13 +1,14 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
- * Copyright 2017 NXP
- * Copyright 2022 Trucrux
+ * Copyright 2018, 2021 NXP
+ * Copyright 2024 Trucrux Ltd.
  *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
 #include <cpu_func.h>
 #include <hang.h>
+#include <init.h>
 #include <spl.h>
 #include <asm/io.h>
 #include <errno.h>
@@ -24,6 +25,8 @@
 #include <asm/mach-imx/mxc_i2c.h>
 #include <fsl_esdhc_imx.h>
 #include <mmc.h>
+#include <fsl_sec.h>
+#include <linux/delay.h>
 #include <power/bd71837.h>
 #include "../common/imx8_eeprom.h"
 
@@ -37,7 +40,7 @@ static void spl_dram_init(void)
 {
 	trux_eeprom_read_header(&eeprom);
 
-	if ((get_cpu_rev() & 0xfff) == CHIP_REV_2_1) {
+	if (soc_rev() >= CHIP_REV_2_1) {
 		trux_eeprom_adjust_dram(&eeprom, &dram_timing);
 		ddr_init(&dram_timing);
 	}
@@ -49,8 +52,7 @@ static void spl_dram_init(void)
 
 #define I2C_PAD_CTRL	(PAD_CTL_DSE6 | PAD_CTL_HYS | PAD_CTL_PUE)
 #define PC MUX_PAD_CTRL(I2C_PAD_CTRL)
-
-struct i2c_pads_info i2c_pad_info1 = {
+static struct i2c_pads_info i2c_pad_info1 = {
 	.scl = {
 		.i2c_mode = IMX8MQ_PAD_I2C1_SCL__I2C1_SCL | PC,
 		.gpio_mode = IMX8MQ_PAD_I2C1_SCL__GPIO5_IO14 | PC,
@@ -63,7 +65,7 @@ struct i2c_pads_info i2c_pad_info1 = {
 	},
 };
 
-struct i2c_pads_info i2c_pad_info3 = {
+static struct i2c_pads_info i2c_pad_info3 = {
 	.scl = {
 		.i2c_mode = IMX8MQ_PAD_I2C3_SCL__I2C3_SCL | PC,
 		.gpio_mode = IMX8MQ_PAD_I2C3_SCL__GPIO5_IO18 | PC,
@@ -78,6 +80,27 @@ struct i2c_pads_info i2c_pad_info3 = {
 
 #define USDHC1_PWR_GPIO IMX_GPIO_NR(2, 10)
 #define USDHC2_PWR_GPIO IMX_GPIO_NR(2, 19)
+
+static const char bd71837_name[] = "BD71837";
+int power_bd71837_init (unsigned char bus) {
+        struct pmic *p = pmic_alloc();
+
+        if (!p) {
+                printf("%s: POWER allocation error!\n", __func__);
+                return -ENOMEM;
+        }
+
+        p->name = bd71837_name;
+        p->interface = PMIC_I2C;
+        p->number_of_regs = BD718XX_MAX_REGISTER;
+        p->hw.i2c.addr = 0x4b;
+        p->hw.i2c.tx_num = 1;
+        p->bus = bus;
+
+        printf("power_bd71837_init\n");
+
+        return 0;
+}
 
 int board_mmc_getcd(struct mmc *mmc)
 {
@@ -129,27 +152,7 @@ static struct fsl_esdhc_cfg usdhc_cfg[2] = {
 	{USDHC2_BASE_ADDR, 0, 4},
 };
 
-static const char bd71837_name[] = "BD71837";
-int power_bd71837_init (unsigned char bus) {
-		struct pmic *p = pmic_alloc();
-		if (!p) {
-				printf("%s: POWER allocation error!\n", __func__);
-				return -ENOMEM;
-		}
-
-		p->name = bd71837_name;
-		p->interface = PMIC_I2C;
-		p->number_of_regs = BD71837_REG_NUM;
-		p->hw.i2c.addr = 0x4b;
-		p->hw.i2c.tx_num = 1;
-		p->bus = bus;
-
-		debug("power_bd71837_init\n");
-
-		return 0;
-}
-
-int board_mmc_init(bd_t *bis)
+int board_mmc_init(struct bd_info *bis)
 {
 	int i, ret;
 	/*
@@ -194,7 +197,7 @@ int board_mmc_init(bd_t *bis)
 	return 0;
 }
 
-#ifdef CONFIG_POWER
+#if CONFIG_IS_ENABLED(POWER_LEGACY)
 
 #define PMIC_I2C_BUS		0
 #define VDD_ARM_I2C_BUS		0
@@ -215,21 +218,21 @@ int set_vdd_regulator(int bus, char *name)
 	uint8_t val1, val2;
 
 	/* Probe VDD regulator */
-		if (!((i2c_set_bus_num(bus) == 0) &&
-			  (i2c_probe(VDD_I2C_ADDR) == 0))) {
+        if (!((i2c_set_bus_num(bus) == 0) &&
+              (i2c_probe(VDD_I2C_ADDR) == 0))) {
 		printf("%s: i2c bus failed\n", name);
 		return -1;
-		}
+        }
 
 	/* Read regulator chip ID */
 	if (!((i2c_read(VDD_I2C_ADDR, VDD_CHIP_ID1, 1, &val1, 1) == 0) &&
-		  (i2c_read(VDD_I2C_ADDR, VDD_CHIP_ID2, 1, &val2, 1) == 0) &&
-		  (val1 == val2))) {
+	      (i2c_read(VDD_I2C_ADDR, VDD_CHIP_ID2, 1, &val2, 1) == 0) &&
+	      (val1 == val2))) {
 		printf("%s: chip ID read failed\n", name);
 		return -1;
-		}
+        }
 
-		debug("%s: Chip ID: 0x%.2x\n", name, val1);
+        debug("%s: Chip ID: 0x%.2x\n", name, val1);
 
 	/* Reset temperature alarm */
 	val1 = 0x0;
@@ -241,7 +244,6 @@ int set_vdd_regulator(int bus, char *name)
 
 	return 0;
 }
-
 
 int power_init_board(void)
 {
@@ -257,25 +259,25 @@ int power_init_board(void)
 		pmic_probe(p);
 
 		/* decrease RESET key long push time from the default 10s to 10ms */
-		pmic_reg_write(p, BD71837_PWRONCONFIG1, 0x0);
+		pmic_reg_write(p, BD718XX_PWRONCONFIG1, 0x0);
 
 		/* unlock the PMIC regs */
-		pmic_reg_write(p, BD71837_REGLOCK, 0x1);
+		pmic_reg_write(p, BD718XX_REGLOCK, 0x1);
 
 		/* increase VDD_SOC to typical value 0.85v before first DRAM access */
-		pmic_reg_write(p, BD71837_BUCK1_VOLT_RUN, 0x0f);
+		pmic_reg_write(p, BD718XX_BUCK1_VOLT_RUN, 0x0f);
 
 		/* increase VDD_DRAM to 0.975v for 3Ghz DDR */
-		pmic_reg_write(p, BD71837_BUCK5_VOLT, 0x83);
+		pmic_reg_write(p, BD718XX_1ST_NODVS_BUCK_VOLT, 0x83);
 
 		/* Enabled NVCC_DRAM */
-		pmic_reg_write(p, BD71837_BUCK8_CTRL, 0x03);
+		pmic_reg_write(p, BD718XX_4TH_NODVS_BUCK_CTRL, 0x03);
 
 		/* Enable LDO5 - PHY supply to 1.8V */
-		pmic_reg_write(p, BD71837_LDO5_VOLT, 0xc0);
+		pmic_reg_write(p, BD718XX_LDO5_VOLT, 0xc0);
 
 		/* lock the PMIC regs */
-		pmic_reg_write(p, BD71837_REGLOCK, 0x11);
+		pmic_reg_write(p, BD718XX_REGLOCK, 0x11);
 
 		return 0;
 
@@ -285,6 +287,12 @@ int power_init_board(void)
 void spl_board_init(void)
 {
 	struct trux_eeprom *ep = TRUX_EEPROM_DATA;
+
+	if (IS_ENABLED(CONFIG_FSL_CAAM)) {
+		if (sec_init())
+			printf("\nsec_init failed!\n");
+	}
+
 #ifndef CONFIG_SPL_USB_SDP_SUPPORT
 	/* Serial download mode */
 	if (is_usb_boot()) {
@@ -311,12 +319,30 @@ int board_fit_config_name_match(const char *name)
 }
 #endif
 
+#define GPR_PCIE_VREG_BYPASS	BIT(12)
+static void enable_pcie_vreg(bool enable)
+{
+	struct iomuxc_gpr_base_regs *gpr =
+		(struct iomuxc_gpr_base_regs *)IOMUXC_GPR_BASE_ADDR;
+
+	if (!enable) {
+		setbits_le32(&gpr->gpr[14], GPR_PCIE_VREG_BYPASS);
+		setbits_le32(&gpr->gpr[16], GPR_PCIE_VREG_BYPASS);
+	} else {
+		clrbits_le32(&gpr->gpr[14], GPR_PCIE_VREG_BYPASS);
+		clrbits_le32(&gpr->gpr[16], GPR_PCIE_VREG_BYPASS);
+	}
+}
+
 void board_init_f(ulong dummy)
 {
 	int ret;
 
 	/* Clear the BSS. */
 	memset(__bss_start, 0, __bss_end - __bss_start);
+
+	/* PCIE_VPH connects to 3.3v on EVK, enable VREG to generate 1.8V to PHY */
+	enable_pcie_vreg(true);
 
 	arch_cpu_init();
 
@@ -344,13 +370,4 @@ void board_init_f(ulong dummy)
 	spl_dram_init();
 
 	board_init_r(NULL, 0);
-}
-
-int do_reset(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
-{
-	puts ("resetting ...\n");
-
-	reset_cpu(WDOG1_BASE_ADDR);
-
-	return 0;
 }
