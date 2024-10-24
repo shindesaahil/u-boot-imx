@@ -153,7 +153,7 @@ static struct mm_region imx8m_mem_map[] = {
 		/* DRAM1 */
 		.virt = 0x40000000UL,
 		.phys = 0x40000000UL,
-		.size = 0xC0000000UL,
+		.size =  0xC0000000UL,
 		.attrs = PTE_BLOCK_MEMTYPE(MT_NORMAL) |
 #ifdef CONFIG_IMX_TRUSTY_OS
 			 PTE_BLOCK_INNER_SHARE
@@ -165,7 +165,7 @@ static struct mm_region imx8m_mem_map[] = {
 		/* DRAM2 */
 		.virt = 0x100000000UL,
 		.phys = 0x100000000UL,
-		size = 0x040000000UL,
+		.size = 0x040000000UL,
 		.attrs = PTE_BLOCK_MEMTYPE(MT_NORMAL) |
 #ifdef CONFIG_IMX_TRUSTY_OS
 			 PTE_BLOCK_INNER_SHARE
@@ -175,7 +175,7 @@ static struct mm_region imx8m_mem_map[] = {
 #else
 	}, {
 		/* empty entry to be filled in enable_caches(void) when SoM has >= 3GB of DRAM as configured by board/trucrux/common/imx8_dram.c according to Trucrux EEPROM */
-                0,
+		0,
 #endif
 	}, {
 		/* empty entrie to split table entry 5 if needed when TEEs are used */
@@ -313,6 +313,7 @@ int dram_init_banksize(void)
 
 	return 0;
 }
+
 phys_size_t get_effective_memsize(void)
 {
 	int ret;
@@ -1259,37 +1260,6 @@ static int delete_u_boot_nodes(void *blob)
 	return 0;
 }
 
-static int cleanup_nodes_for_efi(void *blob)
-{
-	static const char * const path[][2] = {
-		{ "/soc@0/bus@32c00000/usb@32e40000", "extcon" },
-		{ "/soc@0/bus@32c00000/usb@32e50000", "extcon" },
-		{ "/soc@0/bus@30800000/ethernet@30be0000", "phy-reset-gpios" },
-		{ "/soc@0/bus@30800000/ethernet@30bf0000", "phy-reset-gpios" }
-	};
-	int nodeoff, i, rc;
-
-	for (i = 0; i < ARRAY_SIZE(path); i++) {
-		nodeoff = fdt_path_offset(blob, path[i][0]);
-		if (nodeoff < 0)
-			continue; /* Not found, skip it */
-		debug("Found %s node\n", path[i][0]);
-
-		rc = fdt_delprop(blob, nodeoff, path[i][1]);
-		if (rc == -FDT_ERR_NOTFOUND)
-			continue;
-		if (rc) {
-			printf("Unable to update property %s:%s, err=%s\n",
-			       path[i][0], path[i][1], fdt_strerror(rc));
-			return rc;
-		}
-
-		printf("Remove %s:%s\n", path[i][0], path[i][1]);
-	}
-
-	return 0;
-}
-
 int ft_system_setup(void *blob, struct bd_info *bd)
 {
 #ifdef CONFIG_IMX8MQ
@@ -1430,8 +1400,6 @@ usb_modify_speed:
 	if (is_imx8mpd())
 		disable_cpu_nodes(blob, 2);
 #endif
-
-	cleanup_nodes_for_efi(blob);
 
 	delete_u_boot_nodes(blob);
 
