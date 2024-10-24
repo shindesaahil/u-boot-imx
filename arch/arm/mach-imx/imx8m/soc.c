@@ -174,7 +174,7 @@ static struct mm_region imx8m_mem_map[] = {
 #endif
 #else
 	}, {
-		/* empty entry to be filled in enable_caches(void) when SoM has >= 3GB of DRAM as configured by board/variscite/common/imx8_dram.c according to Variscite EEPROM */
+		/* empty entry to be filled in enable_caches(void) when SoM has >= 3GB of DRAM as configured by board/trucrux/common/imx8_dram.c according to Trucrux EEPROM */
                 0,
 #endif
 	}, {
